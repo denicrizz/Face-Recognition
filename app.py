@@ -1,180 +1,105 @@
 import cv2
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
-import os
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
 import streamlit as st
 
-# Fungsi untuk mendapatkan nilai piksel pada koordinat (x, y) atau mengembalikan 0 jika di luar gambar
-def get_pixel(img, center, x, y):
-    """Get pixel value at coordinate (x,y) or return 0 if it's outside the image"""
-    new_value = 0
-    try:
-        if img[x, y] >= center:
-            new_value = 1
-    except:
-        pass
-    return new_value
-
-# Fungsi untuk menghitung LBP pada piksel tertentu
+# Fungsi untuk menghitung LBP
 def lbp_calculated_pixel(img, x, y):
-    """Calculate LBP value for a given pixel"""
     center = img[x, y]
-    val_ar = []
-    # top_left
-    val_ar.append(get_pixel(img, center, x - 1, y - 1))
-    # top
-    val_ar.append(get_pixel(img, center, x - 1, y))
-    # top_right
-    val_ar.append(get_pixel(img, center, x - 1, y + 1))
-    # right
-    val_ar.append(get_pixel(img, center, x, y + 1))
-    # bottom_right
-    val_ar.append(get_pixel(img, center, x + 1, y + 1))
-    # bottom
-    val_ar.append(get_pixel(img, center, x + 1, y))
-    # bottom_left
-    val_ar.append(get_pixel(img, center, x + 1, y - 1))
-    # left
-    val_ar.append(get_pixel(img, center, x, y - 1))
-    
-    power_val = [1, 2, 4, 8, 16, 32, 64, 128]
-    val = 0
-    for i in range(len(val_ar)):
-        val += val_ar[i] * power_val[i]
-    return val
+    neighbors = [
+        (x - 1, y - 1), (x - 1, y), (x - 1, y + 1),
+        (x, y + 1), (x + 1, y + 1), (x + 1, y),
+        (x + 1, y - 1), (x, y - 1)
+    ]
+    binary_vals = [1 if img[nx, ny] >= center else 0 for nx, ny in neighbors if 0 <= nx < img.shape[0] and 0 <= ny < img.shape[1]]
+    power_val = [2**i for i in range(len(binary_vals))]
+    return sum(b * p for b, p in zip(binary_vals, power_val))
 
-# Fungsi untuk mengekstrak fitur LBP dari gambar
+# Ekstrak fitur LBP
 def get_lbp_features(image):
-    """Extract LBP features from an image"""
     height, width = image.shape
-    img_lbp = np.zeros((height, width), np.uint8)
-    
-    for i in range(1, height - 1):
-        for j in range(1, width - 1):
-            img_lbp[i, j] = lbp_calculated_pixel(image, i, j)
-    
-    # Menghitung histogram fitur LBP
-    hist_lbp = cv2.calcHist([img_lbp], [0], None, [256], [0, 256])
+    lbp_img = np.zeros((height, width), np.uint8)
+    for x in range(1, height - 1):
+        for y in range(1, width - 1):
+            lbp_img[x, y] = lbp_calculated_pixel(image, x, y)
+    hist_lbp = cv2.calcHist([lbp_img], [0], None, [256], [0, 256])
     return hist_lbp.flatten()
 
-# Fungsi untuk memuat dataset
-def load_dataset(dataset_path):
-    """Load images and labels from dataset directory"""
-    images = []
-    labels = []
-    label_dict = {}
-    current_label = 0
-    
-    # Iterasi melalui setiap direktori orang
-    for person_name in os.listdir(dataset_path):
-        person_path = os.path.join(dataset_path, person_name)
-        if os.path.isdir(person_path):
-            label_dict[person_name] = current_label
-            
-            # Proses setiap gambar untuk orang tersebut
-            for image_name in os.listdir(person_path):
-                image_path = os.path.join(person_path, image_name)
-                image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-                
-                if image is not None:
-                    # Ukuran gambar untuk konsistensi
-                    image = cv2.resize(image, (100, 100))
-                    # Ekstrak fitur LBP
-                    features = get_lbp_features(image)
-                    images.append(features)
-                    labels.append(current_label)
-            
-            current_label += 1
-    
-    return np.array(images), np.array(labels), label_dict
+# Muat dataset
+def load_dataset(image_paths, labels):
+    features, valid_labels = [], []
+    for path, label in zip(image_paths, labels):
+        image = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+        if image is not None:
+            image = cv2.resize(image, (100, 100))
+            features.append(get_lbp_features(image))
+            valid_labels.append(label)
+    return np.array(features), np.array(valid_labels)
 
-# Fungsi untuk melatih model KNN
-def train_model(X, y):
-    """Train KNN classifier"""
-    # Membagi dataset menjadi training dan testing
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    
-    # Inisialisasi dan latih KNN classifier
-    knn = KNeighborsClassifier(n_neighbors=3)
-    knn.fit(X_train, y_train)
-    
-    # Evaluasi model
-    accuracy = knn.score(X_test, y_test)
-    print(f"Model accuracy: {accuracy * 100:.2f}%")
-    
-    return knn
+# Latih model
+def train_model(X_train, y_train):
+    model = RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)
+    model.fit(X_train, y_train)
+    return model
 
-# Fungsi untuk mendeteksi wajah pada gambar
-def detect_face(image):
-    """Detect face in the image using Haar Cascade Classifier"""
-    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-    
-    # Deteksi wajah pada gambar
-    faces = face_cascade.detectMultiScale(image, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
-    
-    if len(faces) == 0:
-        return None, image  # Tidak ada wajah yang terdeteksi
-    
-    # Memotong gambar untuk hanya menyertakan wajah pertama yang terdeteksi
-    (x, y, w, h) = faces[0]
-    face = image[y:y + h, x:x + w]
-    return face, faces
+# Evaluasi akurasi model
+def evaluate_model(model, X_test, y_test):
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    return accuracy
 
-# Fungsi untuk mengenali wajah dalam gambar
-def recognize_face(image, model, label_dict):
-    """Recognize face in a given image"""
-    # Deteksi wajah pada gambar
-    face, faces = detect_face(image)
-    if face is None:
-        return "Tidak ada wajah yang terdeteksi."
-    
-    # Ukuran gambar wajah untuk konsistensi
-    face = cv2.resize(face, (100, 100))
-    
-    # Ekstrak fitur LBP
-    features = get_lbp_features(face)
-    
-    # Prediksi
+# Pengenalan wajah
+def recognize_face(image, model, label_names):
+    image = cv2.resize(image, (100, 100))
+    features = get_lbp_features(image)
     prediction = model.predict([features])[0]
-    
-    # Mendapatkan nama orang dari label
-    for name, label in label_dict.items():
-        if label == prediction:
-            return name
-    
-    return "Tidak dikenal"
+    return label_names[prediction]
 
 # Streamlit Interface
 def main():
-    st.title("Pengenalan Wajah dengan LBP dan KNN")
-    st.write("Unggah folder dataset yang berisi subfolder untuk setiap orang dengan gambar-gambar wajah.")
+    st.title("Pengenalan Wajah dengan Random Forest")
     
-    dataset_path = st.text_input("Masukkan path ke folder dataset:")
-    if dataset_path:
-        # Memuat dan menyiapkan dataset
+    # Path dataset sederhana
+    image_paths = [
+        "dataset/image1.png",
+        "dataset/image2.png",
+        "dataset/image3.png",
+        "dataset/image4.png"
+    ]
+    labels = [0, 1, 2, 3, 4]
+    label_names = ["Deni", "Prabowo", "Yoona","Tzuyu"]
+    
+    try:
+        # Load dataset
         st.write("Memuat dataset...")
-        X, y, label_dict = load_dataset(dataset_path)
+        X, y = load_dataset(image_paths, labels)
         
-        # Melatih model
+        # Bagi dataset menjadi latih dan uji
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        
+        # Latih model
         st.write("Melatih model...")
-        model = train_model(X, y)
+        model = train_model(X_train, y_train)
         
-        st.write("Model berhasil dilatih!")
+        # Evaluasi model
+        st.write("Evaluasi model...")
+        accuracy = evaluate_model(model, X_test, y_test)
+        st.write(f"Model berhasil dilatih! Akurasi: {accuracy * 100:.2f}%")
         
-        # Unggah gambar untuk pengenalan wajah
+        # Pengenalan wajah
         uploaded_file = st.file_uploader("Unggah gambar untuk pengenalan", type=["jpg", "png"])
         if uploaded_file is not None:
-            # Membaca gambar untuk pengenalan wajah
             file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
             image = cv2.imdecode(file_bytes, cv2.IMREAD_GRAYSCALE)
-            
-            if image is None:
-                st.write("Error: Gambar tidak dapat dimuat.")
-            else:
-                # Mengenali wajah
-                result = recognize_face(image, model, label_dict)
+            if image is not None:
+                result = recognize_face(image, model, label_names)
                 st.write(f"Wajah yang dikenali: {result}")
+            else:
+                st.write("Gagal memuat gambar.")
+    except Exception as e:
+        st.error(f"Terjadi kesalahan: {e}")
 
 if __name__ == "__main__":
     main()
