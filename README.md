@@ -34,8 +34,8 @@ Aplikasi ini menggunakan Local Binary Pattern (LBP) untuk ekstraksi fitur wajah 
 
 1. Clone repositori ini:
    ```bash
-   git clone https://github.com/username/face-recognition-lbp-randomforest.git
-   cd face-recognition-lbp-randomforest
+   git clone https://github.com/denicrizz/Face-Recognition.git
+   cd Face-Recognition
    ```
 
 2. Buat dan aktifkan virtual environment:
@@ -120,5 +120,9 @@ Proyek ini menggunakan lisensi MIT. Silakan lihat file [LICENSE](LICENSE) untuk 
 
 ---
 
+## Link Deploy :
+https://face-recognition-kelompok-6.streamlit.app/
+
+---
 ## Catatan
 Jika Anda memiliki pertanyaan atau masalah, jangan ragu untuk membuka isu atau hubungi saya melalui email. Selamat mencoba! 🎉
