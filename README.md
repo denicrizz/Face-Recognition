@@ -1,7 +1,7 @@
 
 # Pengenalan Wajah dengan Local Binary Pattern (LBP) dan Random Forest
 
-Aplikasi ini menggunakan Local Binary Pattern (LBP) untuk ekstraksi fitur wajah dan Random Forest sebagai algoritma klasifikasi untuk mengenali wajah dari gambar. Aplikasi dibangun dengan Python dan Streamlit sebagai antarmuka pengguna untuk mempermudah penggunaan.Aplikasi Ini dibuat bertujuan untuk memenuhi Tugas UTS Klasifikasi Pola
+Aplikasi ini menggunakan Local Binary Pattern (LBP) untuk ekstraksi fitur wajah dan Random Forest sebagai algoritma klasifikasi untuk mengenali wajah dari gambar. Aplikasi dibangun dengan Python dan Streamlit sebagai antarmuka pengguna untuk mempermudah penggunaan.Aplikasi Ini dibuat bertujuan untuk memenuhi Tugas UTS Klasifikasi Pola Kelas 4A Universitas Nusantara PGRI Kediri
 
 ## Fitur Utama
 - **Ekstraksi Fitur LBP**: Ekstrak pola tekstur lokal dari gambar wajah untuk menghasilkan fitur yang dapat digunakan untuk klasifikasi.
@@ -14,10 +14,10 @@ Aplikasi ini menggunakan Local Binary Pattern (LBP) untuk ekstraksi fitur wajah 
 ```
 .
 ├── dataset/
-│   ├── deni.png
-│   ├── prabowo.png
-│   ├── yoona.png
-|   ├── Tzuyu.png
+│   ├── Adam.jpg
+│   ├── Yeshinta.jpg
+│   ├── Firmandani.jpg
+|   ├── Deni.jpg
 ├── app.py
 ├── requirements.txt
 ├── README.md
@@ -56,11 +56,11 @@ Aplikasi ini menggunakan Local Binary Pattern (LBP) untuk ekstraksi fitur wajah 
 
 1. Pastikan dataset gambar telah ditempatkan di folder `dataset/`. Contoh struktur dataset:
    ```
-  ├── dataset/
-│   ├── deni.png
-│   ├── prabowo.png
-│   ├── yoona.png
-|   ├── Tzuyu.png
+   dataset/
+   ├── Adam.jpg
+   ├── Yeshinta.jpg
+   ├── Firmandani.jpg
+   ├── Deni.jpg
    ```
 
 2. Jalankan aplikasi Streamlit:
@@ -110,7 +110,7 @@ Dataset dibagi menjadi data latih (80%) dan data uji (20%) menggunakan `Stratifi
 ---
 
 ## Kontributor
-- **Nama Anda**  
+- **Kelompok 6 - Klasifikasi Pola**  
   Pengembang Aplikasi Pengenalan Wajah.
 
 ---
