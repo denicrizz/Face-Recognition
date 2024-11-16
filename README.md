@@ -1,11 +1,11 @@
 
 # Pengenalan Wajah dengan Local Binary Pattern (LBP) dan Random Forest
 
-Aplikasi ini menggunakan Local Binary Pattern (LBP) untuk ekstraksi fitur wajah dan Random Forest sebagai algoritma klasifikasi untuk mengenali wajah dari gambar. Aplikasi dibangun dengan Python dan Streamlit sebagai antarmuka pengguna untuk mempermudah penggunaan.
+Aplikasi ini menggunakan Local Binary Pattern (LBP) untuk ekstraksi fitur wajah dan Random Forest sebagai algoritma klasifikasi untuk mengenali wajah dari gambar. Aplikasi dibangun dengan Python dan Streamlit sebagai antarmuka pengguna untuk mempermudah penggunaan.Aplikasi Ini dibuat bertujuan untuk memenuhi Tugas UTS Klasifikasi Pola
 
 ## Fitur Utama
 - **Ekstraksi Fitur LBP**: Ekstrak pola tekstur lokal dari gambar wajah untuk menghasilkan fitur yang dapat digunakan untuk klasifikasi.
-- **Klasifikasi dengan Random Forest**: Gunakan Random Forest untuk membangun model pengenalan wajah berdasarkan dataset.
+- **Klasifikasi dengan Random Forest**: Random Forest untuk membangun model pengenalan wajah berdasarkan dataset.
 - **Antarmuka Streamlit**: Antarmuka sederhana untuk mengunggah gambar dan melihat hasil pengenalan wajah.
 
 ---
@@ -14,15 +14,10 @@ Aplikasi ini menggunakan Local Binary Pattern (LBP) untuk ekstraksi fitur wajah 
 ```
 .
 ├── dataset/
-│   ├── deni1.jpg
-│   ├── deni2.jpg
-│   ├── deni3.jpg
-│   ├── prabowo1.jpg
-│   ├── prabowo2.jpg
-│   ├── prabowo3.jpg
-│   ├── yoona1.jpg
-│   ├── yoona2.jpg
-│   ├── yoona3.jpg
+│   ├── deni.png
+│   ├── prabowo.png
+│   ├── yoona.png
+|   ├── Tzuyu.png
 ├── app.py
 ├── requirements.txt
 ├── README.md
@@ -61,11 +56,11 @@ Aplikasi ini menggunakan Local Binary Pattern (LBP) untuk ekstraksi fitur wajah 
 
 1. Pastikan dataset gambar telah ditempatkan di folder `dataset/`. Contoh struktur dataset:
    ```
-   dataset/
-   ├── deni1.jpg
-   ├── deni2.jpg
-   ├── prabowo1.jpg
-   ├── yoona1.jpg
+  ├── dataset/
+│   ├── deni.png
+│   ├── prabowo.png
+│   ├── yoona.png
+|   ├── Tzuyu.png
    ```
 
 2. Jalankan aplikasi Streamlit:
@@ -90,19 +85,6 @@ Dataset dibagi menjadi data latih (80%) dan data uji (20%) menggunakan `Stratifi
 
 ---
 
-## Contoh Output
-
-1. **Antarmuka Streamlit**
-   - Unggah gambar wajah melalui antarmuka pengguna.
-   - Aplikasi akan menampilkan hasil prediksi wajah yang dikenali.
-
-2. **Akurasi Model**
-   - Akurasi model ditampilkan setelah pelatihan, misalnya:
-     ```
-     Model berhasil dilatih! Akurasi: 90.00%
-     ```
-
----
 
 ## Kebutuhan Sistem
 - Python >= 3.8
