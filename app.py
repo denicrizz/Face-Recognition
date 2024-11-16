@@ -81,7 +81,7 @@ def recognize_face_with_output(image, model, label_names):
 
 # Streamlit Interface
 def main():
-    st.title("Pengenalan Wajah dengan LBP dan Random Forest")
+    st.title("Pengenalan Wajah")
     st.write("Aplikasi ini berjalan menggunakan metode LBP + Random Forest untuk deteksi dan pengenalan wajah.")
     
     # Path dataset sederhana
