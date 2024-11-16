@@ -68,7 +68,7 @@ def main():
         "dataset/image3.png",
         "dataset/image4.png"
     ]
-    labels = [0, 1, 2, 3, 4]
+    labels = [0, 1, 2, 3]
     label_names = ["Deni", "Prabowo", "Yoona","Tzuyu"]
     
     try:
