@@ -34,7 +34,7 @@ Aplikasi ini menggunakan Local Binary Pattern (LBP) untuk ekstraksi fitur wajah 
 
 1. Clone repositori ini:
    ```bash
-   git clone https://github.com/username/Face-Recognition.git
+   git clone https://github.com/denicrizz/Face-Recognition.git
    cd Face-Recognition
    ```
 
