@@ -50,7 +50,7 @@ def evaluate_model(model, X_test, y_test):
     accuracy = accuracy_score(y_test, y_pred)
     return accuracy
 
-# Pengenalan wajah dengan bounding box, nama, dan keterangan teks
+# Pengenalan wajah dengan satu deteksi wajah
 def recognize_face_with_output(image, model, label_names):
     face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
     
@@ -59,40 +59,44 @@ def recognize_face_with_output(image, model, label_names):
     if len(faces) == 0:
         return image, "Tidak ada wajah yang terdeteksi.", []
 
-    recognized_names = []  # Simpan nama yang dikenali
-    for (x, y, w, h) in faces:
-        # Ekstrak area wajah
-        face = image[y:y + h, x:x + w]
-        face = cv2.resize(face, (100, 100))
-        features = get_lbp_features(face)
-        
-        # Prediksi nama
-        prediction = model.predict([features])[0]
-        name = label_names[prediction]
-        recognized_names.append(name)
-        
-        # Gambar kotak di sekitar wajah
-        cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        
-        # Tambahkan nama pada kotak
-        cv2.putText(image, name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
+    # Pilih wajah dengan bounding box terbesar
+    largest_face = max(faces, key=lambda rect: rect[2] * rect[3])  # Area = width * height
+    (x, y, w, h) = largest_face
+
+    # Ekstrak area wajah
+    face = image[y:y + h, x:x + w]
+    face = cv2.resize(face, (100, 100))
+    features = get_lbp_features(face)
     
-    return image, "Wajah dikenali!", recognized_names
+    # Prediksi nama
+    prediction = model.predict([features])[0]
+    name = label_names[prediction]
+    
+    # Gambar kotak di sekitar wajah
+    cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    
+    # Tambahkan nama pada kotak
+    cv2.putText(image, name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
+    
+    return image, "Wajah dikenali!", [name]
 
 # Streamlit Interface
 def main():
-    st.title("Pengenalan Wajah")
+    st.title("Pengenalan Wajah dengan LBP dan Random Forest")
     st.write("Aplikasi ini berjalan menggunakan metode LBP + Random Forest untuk deteksi dan pengenalan wajah.")
     
     # Path dataset sederhana
     image_paths = [
-        "dataset/image1.png",
-        "dataset/image2.png",
-        "dataset/image3.png",
+        "dataset/deni1.png",
+        "dataset/deni2.png",
+        "dataset/adam1.png",
+        "dataset/adam2.png",
+        "dataset/yeshinta1.png",
+        "dataset/yeshinta2.png",
         "dataset/image4.png"
     ]
-    labels = [0, 1, 2, 3]
-    label_names = ["Deni", "Prabowo", "Yoona", "Tzuyu"]
+    labels = [0, 0, 1, 1, 2 , 2, 3]
+    label_names = ["Deni", "Adam", "Yeshinta", "Tzuyu"]
     
     try:
         # Load dataset
@@ -121,9 +125,9 @@ def main():
                 result_image, message, recognized_names = recognize_face_with_output(image, model, label_names)
                 st.write(message)
                 
-                # Tampilkan nama-nama yang dikenali dalam teks
+                # Tampilkan nama yang dikenali dalam teks
                 if recognized_names:
-                    st.write(f"Wajah yang dikenali: {', '.join(recognized_names)}")
+                    st.write(f"Wajah yang dikenali: {recognized_names[0]}")
                 
                 # Konversi gambar ke format RGB untuk ditampilkan
                 result_image_rgb = cv2.cvtColor(result_image, cv2.COLOR_GRAY2RGB)
