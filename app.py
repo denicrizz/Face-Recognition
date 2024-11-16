@@ -60,7 +60,7 @@ def recognize_face(image, model, label_names):
 # Streamlit Interface
 def main():
     st.title("Pengenalan Wajah")
-    st.write("Aplikasi ini berjalan menggunakan metode LBP + Random untuk Deteksi wajah & Pengenalan wajahnya")
+    st.write("Aplikasi ini berjalan menggunakan metode LBP + Random Forest untuk Deteksi wajah & Pengenalan wajahnya")
     # Path dataset sederhana
     image_paths = [
         "dataset/image1.png",
@@ -103,6 +103,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
+
 st.markdown("---") 
 st.markdown("<footer style='text-align: center;'>Dibuat dengan &hearts; Oleh Kelompok 6 - Klepon</footer>", unsafe_allow_html=True)
