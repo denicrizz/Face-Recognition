@@ -101,7 +101,8 @@ def main():
     except Exception as e:
         st.error(f"Terjadi kesalahan: {e}")
 
-st.markdown("---") 
-st.markdown("<footer style='text-align: center;'>Dibuat dengan &hearts; Oleh Kelompok 6 - Klepon</footer>", unsafe_allow_html=True)
 if __name__ == "__main__":
     main()
+    
+st.markdown("---") 
+st.markdown("<footer style='text-align: center;'>Dibuat dengan &hearts; Oleh Kelompok 6 - Klepon</footer>", unsafe_allow_html=True)
