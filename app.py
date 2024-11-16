@@ -102,6 +102,6 @@ def main():
         st.error(f"Terjadi kesalahan: {e}")
 
 st.markdown("---") 
-st.markdown("<footer style='text-align: center;'>Dibuat dengan &hearts; Oleh Kelompok 6</footer>", unsafe_allow_html=True)
+st.markdown("<footer style='text-align: center;'>Dibuat dengan &hearts; Oleh Kelompok 6 - Klepon</footer>", unsafe_allow_html=True)
 if __name__ == "__main__":
     main()
