@@ -59,8 +59,8 @@ def recognize_face(image, model, label_names):
 
 # Streamlit Interface
 def main():
-    st.title("Pengenalan Wajah dengan Random Forest")
-    
+    st.title("Pengenalan Wajah")
+    st.write("Aplikasi ini berjalan menggunakan metode LBP + Random untuk Deteksi wajah & Pengenalan wajahnya")
     # Path dataset sederhana
     image_paths = [
         "dataset/image1.png",
@@ -101,5 +101,7 @@ def main():
     except Exception as e:
         st.error(f"Terjadi kesalahan: {e}")
 
+st.markdown("---") 
+st.markdown("<footer style='text-align: center;'>Dibuat dengan &hearts; Oleh Kelompok 6</footer>", unsafe_allow_html=True)
 if __name__ == "__main__":
     main()
