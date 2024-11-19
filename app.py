@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 
 def extract_lbp_features(image, P=16, R=2):
-    """Extract LBP features from image"""
+    """Ekstrak fitur LBP dari gambar"""
     lbp = local_binary_pattern(image, P, R, method='uniform')
     hist, _ = np.histogram(lbp.ravel(), bins=np.arange(0, P + 3), range=(0, P + 2))
     hist = hist.astype('float32')
@@ -15,7 +15,7 @@ def extract_lbp_features(image, P=16, R=2):
     return hist
 
 def load_dataset(dataset_path):
-    """Load and process dataset"""
+    """Muat dan proses dataset"""
     features = []
     labels = []
     label_names = []
@@ -42,9 +42,9 @@ def load_dataset(dataset_path):
     return np.array(features), np.array(labels), label_names
 
 def predict_face(image, model, label_names):
-    """Predict face from image"""
+    """Prediksi wajah dari gambar"""
     if image is None:
-        return None, "Failed to load image"
+        return None, "Gagal memuat gambar"
     
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if len(image.shape) == 3 else image
     face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -78,21 +78,21 @@ def predict_face(image, model, label_names):
     return result_image, predictions
 
 def main():
-    st.title("Face Recognition App")
+    st.title("Aplikasi Pengenalan Wajah")
     
-    # Sidebar for dataset path
-    dataset_path = st.sidebar.text_input("Dataset Path", "dataset")
+    # Sidebar untuk path dataset
+    dataset_path = st.sidebar.text_input("Path Dataset", "dataset")
     
     if not os.path.exists(dataset_path):
-        st.error(f"Dataset path '{dataset_path}' does not exist!")
+        st.error(f"Path dataset '{dataset_path}' tidak ditemukan!")
         return
         
-    # Load and train model
-    with st.spinner("Loading dataset and training model..."):
+    # Memuat dan melatih model
+    with st.spinner("Memuat dataset dan melatih model..."):
         features, labels, label_names = load_dataset(dataset_path)
         
         if len(features) == 0:
-            st.error("Error: No data loaded!")
+            st.error("Error: Tidak ada data yang dimuat!")
             return
             
         X_train, X_test, y_train, y_test = train_test_split(
@@ -114,11 +114,11 @@ def main():
         train_accuracy = model.score(X_train, y_train)
         test_accuracy = model.score(X_test, y_test)
         
-        st.sidebar.metric("Training Accuracy", f"{train_accuracy*100:.2f}%")
-        st.sidebar.metric("Testing Accuracy", f"{test_accuracy*100:.2f}%")
+        st.sidebar.metric("Akurasi Pelatihan", f"{train_accuracy*100:.2f}%")
+        st.sidebar.metric("Akurasi Pengujian", f"{test_accuracy*100:.2f}%")
     
-    # Image upload
-    uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+    # Upload gambar
+    uploaded_file = st.file_uploader("Pilih gambar...", type=["jpg", "jpeg", "png"])
     
     if uploaded_file is not None:
         file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
@@ -127,13 +127,13 @@ def main():
         result_image, predictions = predict_face(image, model, label_names)
         
         if predictions:
-            st.image(cv2.cvtColor(result_image, cv2.COLOR_BGR2RGB), caption='Detected Face(s)')
-            
-            st.subheader("Predictions:")
+            st.subheader("Hasil Prediksi:")
             for name, accuracy in predictions:
-                st.write(f"- {name}: {accuracy:.1f}%")
+                st.write(f"- {name}: Akurasi {accuracy:.1f} %")
+                
+            st.image(cv2.cvtColor(result_image, cv2.COLOR_BGR2RGB), caption='Wajah yang Terdeteksi')
         else:
-            st.warning("No faces detected in the image")
+            st.warning("Tidak ada wajah terdeteksi dalam gambar")
 
 if __name__ == "__main__":
     main()
