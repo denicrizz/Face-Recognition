@@ -1,144 +1,139 @@
+import os
 import cv2
 import numpy as np
+import streamlit as st
+from skimage.feature import local_binary_pattern
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
-import streamlit as st
 
-# Fungsi untuk menghitung LBP
-def lbp_calculated_pixel(img, x, y):
-    center = img[x, y]
-    neighbors = [
-        (x - 1, y - 1), (x - 1, y), (x - 1, y + 1),
-        (x, y + 1), (x + 1, y + 1), (x + 1, y),
-        (x + 1, y - 1), (x, y - 1)
-    ]
-    binary_vals = [1 if img[nx, ny] >= center else 0 for nx, ny in neighbors if 0 <= nx < img.shape[0] and 0 <= ny < img.shape[1]]
-    power_val = [2**i for i in range(len(binary_vals))]
-    return sum(b * p for b, p in zip(binary_vals, power_val))
+def extract_lbp_features(image, P=16, R=2):
+    """Extract LBP features from image"""
+    lbp = local_binary_pattern(image, P, R, method='uniform')
+    hist, _ = np.histogram(lbp.ravel(), bins=np.arange(0, P + 3), range=(0, P + 2))
+    hist = hist.astype('float32')
+    hist /= (hist.sum() + 1e-7)
+    return hist
 
-# Ekstrak fitur LBP
-def get_lbp_features(image):
-    height, width = image.shape
-    lbp_img = np.zeros((height, width), np.uint8)
-    for x in range(1, height - 1):
-        for y in range(1, width - 1):
-            lbp_img[x, y] = lbp_calculated_pixel(image, x, y)
-    hist_lbp = cv2.calcHist([lbp_img], [0], None, [256], [0, 256])
-    return hist_lbp.flatten()
+def load_dataset(dataset_path):
+    """Load and process dataset"""
+    features = []
+    labels = []
+    label_names = []
+    
+    all_folders = [f for f in os.listdir(dataset_path) 
+                  if os.path.isdir(os.path.join(dataset_path, f))]
+    
+    for label_idx, folder_name in enumerate(all_folders):
+        folder_path = os.path.join(dataset_path, folder_name)
+        label_names.append(folder_name)
+        
+        for image_file in os.listdir(folder_path):
+            if image_file.lower().endswith(('.png', '.jpg', '.jpeg')):
+                image_path = os.path.join(folder_path, image_file)
+                image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+                
+                if image is not None:
+                    image = cv2.resize(image, (200, 200))
+                    image = cv2.equalizeHist(image)
+                    lbp_features = extract_lbp_features(image)
+                    features.append(lbp_features)
+                    labels.append(label_idx)
+    
+    return np.array(features), np.array(labels), label_names
 
-# Muat dataset
-def load_dataset(image_paths, labels):
-    features, valid_labels = [], []
-    for path, label in zip(image_paths, labels):
-        image = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-        if image is not None:
-            image = cv2.resize(image, (100, 100))
-            features.append(get_lbp_features(image))
-            valid_labels.append(label)
-    return np.array(features), np.array(valid_labels)
-
-# Latih model
-def train_model(X_train, y_train):
-    model = RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)
-    model.fit(X_train, y_train)
-    return model
-
-# Evaluasi akurasi model
-def evaluate_model(model, X_test, y_test):
-    y_pred = model.predict(X_test)
-    accuracy = accuracy_score(y_test, y_pred)
-    return accuracy
-
-# Pengenalan wajah dengan satu deteksi wajah
-def recognize_face_with_output(image, model, label_names):
+def predict_face(image, model, label_names):
+    """Predict face from image"""
+    if image is None:
+        return None, "Failed to load image"
+    
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if len(image.shape) == 3 else image
     face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-    
-    # Deteksi wajah
-    faces = face_cascade.detectMultiScale(image, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=8, minSize=(70, 70))
+
     if len(faces) == 0:
-        return image, "Tidak ada wajah yang terdeteksi.", []
+        return image, []
 
-    # Pilih wajah dengan bounding box terbesar
-    largest_face = max(faces, key=lambda rect: rect[2] * rect[3])  # Area = width * height
-    (x, y, w, h) = largest_face
+    result_image = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR) if len(image.shape) == 2 else image.copy()
+    predictions = []
 
-    # Ekstrak area wajah
-    face = image[y:y + h, x:x + w]
-    face = cv2.resize(face, (100, 100))
-    features = get_lbp_features(face)
-    
-    # Prediksi nama
-    prediction = model.predict([features])[0]
-    name = label_names[prediction]
-    
-    # Gambar kotak di sekitar wajah
-    cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-    
-    # Tambahkan nama pada kotak
-    cv2.putText(image, name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
-    
-    return image, "Wajah dikenali!", [name]
+    for (x, y, w, h) in faces:
+        face_roi = gray[y:y + h, x:x + w]
+        face_roi = cv2.resize(face_roi, (250, 250))
+        face_roi = cv2.equalizeHist(face_roi)
+        features = extract_lbp_features(face_roi)
 
-# Streamlit Interface
+        probs = model.predict_proba([features])[0]
+        pred_idx = np.argmax(probs)
+        accuracy = probs[pred_idx] * 100
+        name = label_names[pred_idx]
+
+        predictions.append((name, accuracy))
+        label = f"{name} ({accuracy:.1f}%)"
+
+        color = (0, 255, 0) if accuracy > 80 else (0, 255, 255) if accuracy > 60 else (0, 0, 255)
+        cv2.rectangle(result_image, (x, y), (x + w, y + h), color, 2)
+        cv2.putText(result_image, label, (x, y - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
+
+    return result_image, predictions
+
 def main():
-    st.title("Pengenalan Wajah dengan LBP dan Random Forest")
-    st.write("Aplikasi ini berjalan menggunakan metode LBP + Random Forest untuk deteksi dan pengenalan wajah.")
+    st.title("Face Recognition App")
     
-    # Path dataset sederhana
-    image_paths = [
-        "dataset/deni1.png",
-        "dataset/deni2.png",
-        "dataset/adam1.png",
-        "dataset/adam2.png",
-        "dataset/yeshinta1.png",
-        "dataset/yeshinta2.png",
-        "dataset/image4.png"
-    ]
-    labels = [0, 0, 1, 1, 2 , 2, 3]
-    label_names = ["Deni", "Adam", "Yeshinta", "Tzuyu"]
+    # Sidebar for dataset path
+    dataset_path = st.sidebar.text_input("Dataset Path", "dataset")
     
-    try:
-        # Load dataset
-        st.write("Memuat dataset...")
-        X, y = load_dataset(image_paths, labels)
+    if not os.path.exists(dataset_path):
+        st.error(f"Dataset path '{dataset_path}' does not exist!")
+        return
         
-        # Bagi dataset menjadi latih dan uji
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    # Load and train model
+    with st.spinner("Loading dataset and training model..."):
+        features, labels, label_names = load_dataset(dataset_path)
         
-        # Latih model
-        st.write("Melatih model...")
-        model = train_model(X_train, y_train)
-        
-        # Evaluasi model
-        st.write("Evaluasi model...")
-        accuracy = evaluate_model(model, X_test, y_test)
-        st.write(f"Model berhasil dilatih! Akurasi: {accuracy * 100:.2f}%")
-        
-        # Pengenalan wajah
-        uploaded_file = st.file_uploader("Unggah gambar untuk pengenalan", type=["jpg", "png"])
-        if uploaded_file is not None:
-            file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
-            image = cv2.imdecode(file_bytes, cv2.IMREAD_GRAYSCALE)
+        if len(features) == 0:
+            st.error("Error: No data loaded!")
+            return
             
-            if image is not None:
-                result_image, message, recognized_names = recognize_face_with_output(image, model, label_names)
-                st.write(message)
-                
-                # Tampilkan nama yang dikenali dalam teks
-                if recognized_names:
-                    st.write(f"Wajah yang dikenali: {recognized_names[0]}")
-                
-                # Konversi gambar ke format RGB untuk ditampilkan
-                result_image_rgb = cv2.cvtColor(result_image, cv2.COLOR_GRAY2RGB)
-                st.image(result_image_rgb, caption="Hasil Pengenalan Wajah", use_container_width=True)
-            else:
-                st.write("Gagal memuat gambar.")
-    except Exception as e:
-        st.error(f"Terjadi kesalahan: {e}")
+        X_train, X_test, y_train, y_test = train_test_split(
+            features, labels, test_size=0.2, random_state=42, stratify=labels)
+        
+        model = RandomForestClassifier(
+            n_estimators=250,
+            max_depth=None,
+            min_samples_split=2,
+            min_samples_leaf=1,
+            max_features='sqrt',
+            bootstrap=True,
+            random_state=42,
+            n_jobs=-1
+        )
+        
+        model.fit(X_train, y_train)
+        
+        train_accuracy = model.score(X_train, y_train)
+        test_accuracy = model.score(X_test, y_test)
+        
+        st.sidebar.metric("Training Accuracy", f"{train_accuracy*100:.2f}%")
+        st.sidebar.metric("Testing Accuracy", f"{test_accuracy*100:.2f}%")
+    
+    # Image upload
+    uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+    
+    if uploaded_file is not None:
+        file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+        image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+        
+        result_image, predictions = predict_face(image, model, label_names)
+        
+        if predictions:
+            st.image(cv2.cvtColor(result_image, cv2.COLOR_BGR2RGB), caption='Detected Face(s)')
+            
+            st.subheader("Predictions:")
+            for name, accuracy in predictions:
+                st.write(f"- {name}: {accuracy:.1f}%")
+        else:
+            st.warning("No faces detected in the image")
 
 if __name__ == "__main__":
     main()
-
-st.markdown("---") 
-st.markdown("<footer style='text-align: center;'>Dibuat dengan &hearts; Oleh Kelompok 6 - Klepon</footer>", unsafe_allow_html=True)
